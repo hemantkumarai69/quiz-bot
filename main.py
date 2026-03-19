@@ -1,27 +1,31 @@
 import telebot
-from flask import Flask
-import threading
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import os
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 bot = telebot.TeleBot(BOT_TOKEN)
 
-app = Flask('')
-
-@app.route('/')
-def home():
-    return "Bot is running!"
-
-def run():
-    app.run(host='0.0.0.0', port=8080)
-
-def keep_alive():
-    t = threading.Thread(target=run)
-    t.start()
+# Simple question
+question = "India ka capital kya hai?"
+options = ["Delhi", "Mumbai", "Kolkata", "Chennai"]
+correct_answer = "Delhi"
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.send_message(message.chat.id, "Welcome to Quiz Bot 🔥")
+    markup = InlineKeyboardMarkup()
+    
+    for option in options:
+        markup.add(InlineKeyboardButton(option, callback_data=option))
+    
+    bot.send_message(message.chat.id, question, reply_markup=markup)
 
-keep_alive()
+@bot.callback_query_handler(func=lambda call: True)
+def answer(call):
+    if call.data == correct_answer:
+        bot.answer_callback_query(call.id, "✅ Sahi jawab!")
+        bot.send_message(call.message.chat.id, "🎉 You won!")
+    else:
+        bot.answer_callback_query(call.id, "❌ Galat jawab")
+
+print("Quiz Bot Running...")
 bot.infinity_polling()
